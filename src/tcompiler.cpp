@@ -468,6 +468,58 @@ struct TType { //contains llvm raw type pointer and any metadata about it we nee
 class Types {
     TerraCompilationUnit * CU;
     terra_State * T;
+
+  // All fields of a struct type must be complete
+  bool IsCompleteStruct(Obj *typ) {
+    bool iscomplete = true;
+    switch (typ->kind("kind")) {
+    case T_pointer: {
+      Obj base;
+      typ->obj("type", &base);
+      if (base.kind("kind") == T_struct) return !iscomplete;
+      iscomplete = iscomplete &&  IsCompleteStruct(&base);
+      return iscomplete;
+    } break;
+
+    case T_array:
+    case T_vector: {
+      Obj base;
+      typ->obj("type", &base);
+      iscomplete = iscomplete &&  IsCompleteStruct(&base);
+      return iscomplete;
+    } break;
+
+    case T_struct: {
+      if (typ->boolean("undefined") || typ->boolean("incomplete"))
+        return false;
+      Obj layout;
+      GetStructEntries(typ,&layout);
+      int N = layout.size();
+      for(int i = 0; i < N; i++) {
+        Obj v;
+        layout.objAt(i, &v);
+        Obj vt;
+        v.obj("type",&vt);
+        iscomplete = iscomplete &&  IsCompleteStruct(&vt);
+        if (!iscomplete) return iscomplete;
+      }
+    } break;
+
+    case T_primitive:
+    case T_niltype:
+    case T_opaque:
+    case T_functype:
+      return iscomplete;
+      break;
+
+    default: {
+      printf("kind = %d, %s\n",typ->kind("kind"),tkindtostr(typ->kind("kind")));
+      terra_reporterror(T,"type not understood\n");
+    } break;
+    }
+    return iscomplete;
+  }
+
     TType * GetIncomplete(Obj * typ) {
         TType * t = NULL;
         if(!LookupTypeCache(typ, &t)) {
@@ -578,7 +630,13 @@ class Types {
         if (isreserved)
             return StructType::create(*CU->TT->ctx, name);
         else
-            return StructType::get(*CU->TT->ctx, LayoutStruct(NULL, typ), false);
+          {
+            if (IsCompleteStruct(typ)) {
+              return StructType::get(*CU->TT->ctx, LayoutStruct(NULL, typ), false);
+            }
+            else
+              return StructType::create(*CU->TT->ctx);
+          }
     }
     bool beginsWith(const std::string & s, const std::string & prefix) {
         return s.substr(0,prefix.size()) == prefix;
