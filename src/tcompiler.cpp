@@ -469,56 +469,56 @@ class Types {
     TerraCompilationUnit * CU;
     terra_State * T;
 
-  // All fields of a struct type must be complete
-  bool IsCompleteStruct(Obj *typ) {
-    bool iscomplete = true;
-    switch (typ->kind("kind")) {
-    case T_pointer: {
-      Obj base;
-      typ->obj("type", &base);
-      if (base.kind("kind") == T_struct) return !iscomplete;
-      iscomplete = iscomplete &&  IsCompleteStruct(&base);
-      return iscomplete;
-    } break;
+    // All fields of a struct type must be complete
+    bool IsCompleteStruct(Obj *typ) {
+        bool iscomplete = true;
+        switch (typ->kind("kind")) {
+        case T_pointer: {
+            Obj base;
+            typ->obj("type", &base);
+            if (base.kind("kind") == T_struct) return !iscomplete;
+            iscomplete = iscomplete &&  IsCompleteStruct(&base);
+            return iscomplete;
+        } break;
 
-    case T_array:
-    case T_vector: {
-      Obj base;
-      typ->obj("type", &base);
-      iscomplete = iscomplete &&  IsCompleteStruct(&base);
-      return iscomplete;
-    } break;
+        case T_array:
+        case T_vector: {
+            Obj base;
+            typ->obj("type", &base);
+            iscomplete = iscomplete &&  IsCompleteStruct(&base);
+            return iscomplete;
+        } break;
 
-    case T_struct: {
-      if (typ->boolean("undefined") || typ->boolean("incomplete"))
-        return false;
-      Obj layout;
-      GetStructEntries(typ,&layout);
-      int N = layout.size();
-      for(int i = 0; i < N; i++) {
-        Obj v;
-        layout.objAt(i, &v);
-        Obj vt;
-        v.obj("type",&vt);
-        iscomplete = iscomplete &&  IsCompleteStruct(&vt);
-        if (!iscomplete) return iscomplete;
-      }
-    } break;
+        case T_struct: {
+            if (typ->boolean("undefined") || typ->boolean("incomplete"))
+                return false;
+            Obj layout;
+            GetStructEntries(typ,&layout);
+            int N = layout.size();
+            for(int i = 0; i < N; i++) {
+                Obj v;
+                layout.objAt(i, &v);
+                Obj vt;
+                v.obj("type",&vt);
+                iscomplete = iscomplete &&  IsCompleteStruct(&vt);
+                if (!iscomplete) return iscomplete;
+            }
+        } break;
 
-    case T_primitive:
-    case T_niltype:
-    case T_opaque:
-    case T_functype:
-      return iscomplete;
-      break;
+        case T_primitive:
+        case T_niltype:
+        case T_opaque:
+        case T_functype:
+            return iscomplete;
+            break;
 
-    default: {
-      printf("kind = %d, %s\n",typ->kind("kind"),tkindtostr(typ->kind("kind")));
-      terra_reporterror(T,"type not understood\n");
-    } break;
+        default: {
+            printf("kind = %d, %s\n",typ->kind("kind"),tkindtostr(typ->kind("kind")));
+            terra_reporterror(T,"type not understood\n");
+        } break;
+        }
+        return iscomplete;
     }
-    return iscomplete;
-  }
 
     TType * GetIncomplete(Obj * typ) {
         TType * t = NULL;
@@ -629,14 +629,14 @@ class Types {
         name = (isreserved) ? std::string("$") + name : name;
         if (isreserved)
             return StructType::create(*CU->TT->ctx, name);
-        else
-          {
+        else {
             if (IsCompleteStruct(typ)) {
-              return StructType::get(*CU->TT->ctx, LayoutStruct(NULL, typ), false);
+                return StructType::get(*CU->TT->ctx, LayoutStruct(NULL, typ), false);
             }
-            else
-              return StructType::create(*CU->TT->ctx);
-          }
+            else {
+                return StructType::create(*CU->TT->ctx);
+            }
+        }
     }
     bool beginsWith(const std::string & s, const std::string & prefix) {
         return s.substr(0,prefix.size()) == prefix;
@@ -693,15 +693,15 @@ class Types {
                 entry_types.push_back(fieldtype);
             }
         }
-	if (st) {
-          st->setBody(entry_types);
+        if (st) {
+            st->setBody(entry_types);
         }
         VERBOSE_ONLY(T) {
-          if (st) {
-            printf("Struct Layout Is:\n");
-            st->dump();
-            printf("\nEnd Layout\n");
-	  }
+            if (st) {
+                printf("Struct Layout Is:\n");
+                st->dump();
+                printf("\nEnd Layout\n");
+            }
         }
       return entry_types;
     }
@@ -1000,7 +1000,6 @@ struct CCallingConv {
             r->addAttribute(idx,t->issigned ? Attribute::SExt : Attribute::ZExt);
         #endif
     }
-    
     template<typename FnOrCall>
     void AttributeFnOrCall(FnOrCall * r, Classification * info) {
         addExtAttrIfNeeded(info->returntype.type, r, 0);
